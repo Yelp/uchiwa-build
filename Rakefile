@@ -10,14 +10,13 @@ operating_systems = [
 ]
 
 platforms = {
-  "i386" => "386",
   "amd64" => "x86_64"
 }
 
 name = "uchiwa"
-license = "https://github.com/sensu/uchiwa/blob/master/LICENSE"
+license = "https://github.com/Yelp/uchiwa/blob/master/LICENSE"
 version = ENV["PACKAGE_VERSION"]
-iteration = 1
+iteration = ENV["ITERATION"]
 vendor = "Simon Plourde"
 maintainer = "Simon Plourde simon.plourde@gmail.com"
 category = "Monitoring"
@@ -34,10 +33,10 @@ def run_command(command)
 end
 
 task :install_deps do
-  run_command("go get github.com/sensu/uchiwa")
-  run_command("cd $GOPATH/src/github.com/sensu/uchiwa && " +
+  run_command("go get github.com/Yelp/uchiwa")
+  run_command("cd $GOPATH/src/github.com/Yelp/uchiwa && " +
     "git checkout #{version} && cd -")
-  run_command("cp -r $GOPATH/src/github.com/sensu/uchiwa/. .")
+  run_command("cp -r $GOPATH/src/github.com/Yelp/uchiwa/. .")
   run_command("npm install --production && npm run postinstall && " +
     "rm -rf node_modules")
   run_command("go get github.com/stretchr/testify")
@@ -83,7 +82,7 @@ task :package do
       puts "Copying Uchiwa binary to omnibus bin directory ..."
       run_command("cp -f #{ASSET_DIR}/#{name}-#{os}-#{go_arch} #{dashboard_dir}/bin/uchiwa")
 
-      [deb_scripts, rpm_scripts].each do |package_scripts|
+      [deb_scripts].each do |package_scripts|
         fpm_cmd = "fpm -s dir #{package_scripts} -n '#{name}' -C #{install_dir} " +
           "-v #{version} --iteration #{iteration} " +
           "--license '#{license}' --vendor '#{vendor}' " +
