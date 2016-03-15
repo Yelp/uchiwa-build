@@ -10,7 +10,7 @@ operating_systems = [
 ]
 
 platforms = {
-  "amd64" => "x86_64"
+  "amd64" => "amd64"
 }
 
 name = "uchiwa"
@@ -27,6 +27,7 @@ group = "uchiwa"
 
 install_dir = "/tmp/install"
 dashboard_dir = File.join(install_dir, "opt", name)
+target_dir = ENV["TARGET_DIR"]
 
 def run_command(command)
   system(command)
@@ -106,10 +107,12 @@ task :package do
 end
 
 task :install do
-  pkg_name = "#{name}-#{version}-#{iteration}.x86_64.rpm"
+  pkg_name = "#{name}_#{version}-#{iteration}_amd64.deb"
   pkg_path = File.join(PKG_DIR, pkg_name)
-  puts "Installing Uchiwa package: #{pkg_path} ..."
-  run_command("rpm -i #{pkg_path}")
+  run_command(pkg_path)
+  puts "Installing Uchiwa package: #{pkg_path} #{version} #{iteration} ..."
+  run_command("dpkg -i #{pkg_path}")
+  run_command("cp #{pkg_path} #{target_dir}/#{pkg_name}")
 end
 
 task :smoke do
