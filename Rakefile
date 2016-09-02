@@ -10,6 +10,7 @@ operating_systems = [
 ]
 
 platforms = {
+  "i386" => "386",
   "amd64" => "amd64"
 }
 
@@ -29,11 +30,14 @@ install_dir = "/tmp/install"
 dashboard_dir = File.join(install_dir, "opt", name)
 target_dir = ENV["TARGET_DIR"]
 
-def run_command(command)
-  system(command)
+def run_command(cmd)
+  output = `#{cmd}`
+  puts output
+  abort "The last command failed" unless $?.success?
 end
 
 task :install_deps do
+  run_command("go version")
   run_command("go get github.com/Yelp/uchiwa")
   run_command("cd $GOPATH/src/github.com/Yelp/uchiwa && " +
     "git checkout #{version} && cd -")
@@ -41,12 +45,10 @@ task :install_deps do
   run_command("npm install --production && npm run postinstall && " +
     "rm -rf node_modules")
   run_command("go get github.com/stretchr/testify")
-  run_command("go get github.com/tools/godep")
-  run_command("export GOPATH=`$GOPATH/bin/godep path`")
 end
 
 task :run_tests do
-  run_command("$GOPATH/bin/godep go test -v ./...")
+  run_command("go test -v ./...")
   run_command("npm install -g grunt-cli")
   run_command("npm test")
 end
@@ -56,7 +58,9 @@ task :build do
     platforms.each do |platform, go_arch|
       puts "Building Uchiwa binary for #{platform} ..."
       output_path = "#{ASSET_DIR}/#{name}-#{go_os}-#{go_arch}"
-      run_command("$GOPATH/bin/godep go build -v -o #{output_path}")
+      ENV['GOOS'] = go_os
+      ENV['GOARCH'] = go_arch
+      run_command("go build -v -o #{output_path}")
     end
   end
 end
@@ -117,7 +121,7 @@ end
 
 task :smoke do
   puts "Listing expected install directories ..."
-  run_command("ls -lR /opt/#{name}")
+  run_command("ls -l /opt/#{name}")
   run_command("ls -l /etc/sensu/uchiwa.json")
   run_command("ls -l /etc/init.d/#{name}")
 
@@ -128,4 +132,9 @@ task :smoke do
   run_command("cat /var/log/#{name}.err")
 end
 
-task :default => [:install_deps, :build, :package, :install, :smoke]
+task :cleanup do
+  puts "Removing the #{ASSET_DIR} directory..."
+  run_command("rm -rf #{ASSET_DIR}/uchiwa*")
+end
+
+task :default => [:install_deps, :build, :package, :install, :smoke, :cleanup]
